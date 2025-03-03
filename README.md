@@ -16,3 +16,5 @@ Arduino Mega 2560(or any arduino of choice) || Python 3.11(Whisper does not work
 - Make sure you download all of your imports through the terminal. One way I did this was by manually installing it in the terminal with this command: pip install serial whisper openai numpy sounddevice
 4. Hardware
 - Make sure all hardware is working correctly. Any damage to the hardware would not let the project work.
+
+- Video Link: https://youtu.be/LQOoFSo-Rjc
