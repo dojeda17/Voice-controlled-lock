@@ -1,0 +1,71 @@
+import serial
+import requests
+import whisper
+import sounddevice as sd
+import numpy as np
+import wave
+import time
+
+# Setup serial communication to port
+port = "/dev/cu.usbmodem2101"
+baud_rate = 9600
+
+try:
+    arduino = serial.Serial(port, baud_rate)
+    print(f"Connected to Arduino on port {port}")
+except serial.SerialException as e:
+    print(f"Error connecting to Arduino: {e}") #returns error of no connection
+    exit(1)
+
+# Load Whisper model 
+model = whisper.load_model("small")
+
+def sendCommand(command):
+    try:
+        
+         #Send a command to the Arduino.
+         message_to_send = command + "\n"
+         arduino.write(message_to_send.encode('utf-8'))
+         print(f"Sent: {message_to_send.strip()}")
+         time.sleep(1)
+    except serial.SerialException as e:
+        print(f"Error: {e}")
+
+def getVoice(filename="test.wav", duration=5, samplerate=44100):
+    # method to record voice and get the command
+    print("Listening... Speak now!")
+    audio_data = sd.rec(int(samplerate * duration), samplerate=samplerate, channels=1, dtype=np.int16)
+    sd.wait()
+
+    # Save recorded audio as a WAV file
+    with wave.open(filename, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(samplerate)
+        wf.writeframes(audio_data.tobytes())
+
+    print("Audio recorded!")
+
+def main():
+    try:
+            getVoice()
+            print("Transcribing...")
+            text = model.transcribe("test.wav") #uses whisper to transcibe audio and store it in text
+            command = text["text"].strip().upper() #extracts the text from the audio and stores it in command
+            print(f"Recognized Text: {command}")
+            if "OPEN" in command:
+                sendCommand('O')  # Send 'O' to open the lock
+                print("Sent open command")
+            elif "CLOSE" in command:
+                sendCommand('C')  # Send 'C' to close the lock
+                print("Sent close command")
+            else: 
+                print("No valid command detected.")
+            time.sleep(1)  # Wait for 1 second
+    except KeyboardInterrupt:
+        print("Program terminated")
+    except Exception as e:
+        print(f"Unexpected erro: {e}")
+
+if __name__ == "__main__":
+    main()
